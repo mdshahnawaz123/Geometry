@@ -4,6 +4,7 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -17,22 +18,10 @@ namespace Geometry
         {
             var uidoc = commandData.Application.ActiveUIDocument;
             var doc = uidoc.Document;
+            
             try
             {
-                //Lets Check the Plane Creation and Lets Visualize it:
-
-                var upperleft = new XYZ(10, 0, 0);
-                var upperRight = new XYZ(10, 10, 0);
-                var lowerLeft = new XYZ(0, 0, 0);
-                var lowerRight = new XYZ(0, 10, 0);
-
-                var curve = new List<GeometryObject>();
-                curve.Add(Line.CreateBound(upperleft, upperRight));
-                curve.Add(Line.CreateBound(upperRight, lowerRight));
-                curve.Add(Line.CreateBound(lowerRight, lowerLeft));
-                curve.Add(Line.CreateBound(lowerLeft, upperleft));
-
-                doc.CreateElement(curve);
+                
 
 
             }
