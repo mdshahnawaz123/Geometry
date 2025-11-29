@@ -33,8 +33,7 @@ namespace Geometry
                 curve.Add(Line.CreateBound(lowerLeft, upperleft));
 
                 doc.CreateElement(curve);
-
-
+                var newPlan = Plane.CreateByNormalAndOrigin(XYZ.BasisZ, XYZ.Zero);
             }
             catch (System.Exception ex)
             {
