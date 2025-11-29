@@ -41,6 +41,9 @@ namespace Geometry
                         var line = Line.CreateBound(point, point + xVector);
                         line.Visualiuze(doc);
                         point.Visualiuze(doc);
+
+                        var plane = Plane.CreateByNormalAndOrigin(XYZ.BasisZ,XYZ.Zero);
+                        plane.Visualize(doc);
                         tx.Commit();
                     }
                     TaskDialog.Show("GeometryClass", "Execute method ran successfully.");
