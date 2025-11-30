@@ -14,40 +14,21 @@ namespace Geometry
             var doc = uidoc.Document;
             try
             {
-                //Points and Vector
-                //Planes
-                //Transform
-                //Geometry Creation
-                //how we can visualize our geometrical objects:
-                //Extension Methods for DirectShape
-                // Your code logic here
+                //Lets Select the Elemet and Get the Solid
 
-                //Lets try our Extension Methods:
+                Transaction Trans = new Transaction(doc, "Select Element");
+                Trans.Start();
 
-                var selectedIds = uidoc.Selection.GetElementIds();
-
-                var xVector = new XYZ(10, 0, 0);
-
-                foreach (var selectedId in selectedIds)
+                var selection = uidoc.Selection.GetElementIds().First();
+                var ele = doc.GetElement(selection);
+                var edge = ele.getEdges(doc);
+                foreach(var e in elements)
                 {
-                    // Fix: Call GetPlacementPoint as a method (with parentheses)
-                    var point = doc.GetElement(selectedId).GetPlacementPoint();
-
-                    using (Transaction tx = new Transaction(doc, "Visualize Point"))
-                    {
-                        tx.Start();
-                        //Lets Create the Line from Oragin of Geometry to XVector
-
-                        var line = Line.CreateBound(point, point + xVector);
-                        line.Visualiuze(doc);
-                        point.Visualiuze(doc);
-
-                        var plane = Plane.CreateByNormalAndOrigin(XYZ.BasisZ,XYZ.Zero);
-                        plane.Visualize(doc);
-                        tx.Commit();
-                    }
-                    TaskDialog.Show("GeometryClass", "Execute method ran successfully.");
+                     
+                   
                 }
+                Trans.Commit();
+
             }
             catch (System.Exception ex)
             {
