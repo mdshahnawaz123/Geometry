@@ -267,5 +267,24 @@ namespace Geometry
             return edges;
         }
 
+        //Lets Create Extension Method for Solid Union
+
+        public static Solid unionSolid(this IEnumerable<Solid> solids)
+        {
+            return solids
+                .Where(x => x.HasVolumne())
+                .Aggregate((x, y) => BooleanOperationsUtils
+                .ExecuteBooleanOperation(x, y, BooleanOperationsType.Union));
+        }
+        public static bool HasVolumne(this Solid solids)
+        {
+            return solids.Volume > 0;
+        }
+        //Lets Create Extension and Visulize Method for The Point XYZ
+
+        public static XYZ Mid(this Curve curve)
+        {
+            return curve.Evaluate(0.5, true);
+        }
     }
 }
