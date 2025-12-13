@@ -1,10 +1,13 @@
 ﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
+using Transaction = Autodesk.Revit.DB.Transaction;
 
 namespace Geometry
 {
@@ -43,7 +46,7 @@ namespace Geometry
         //Lets Create the Extension Method for Visualiuze the Curve:
 
 
-        public static void Visualiuze(this Curve curve, Document document)
+        public static void Visualiuze(this Curve? curve, Document document)
         {
             if (curve == null)
             {
@@ -54,14 +57,14 @@ namespace Geometry
 
         //Lets Create the Extension Method for GetPlacement Point
 
-        public static XYZ GetPlacementPoint(this Element element)
+        public static XYZ GetPlacementPoint(this Element? element)
         {
             if (element == null)
             {
                 TaskDialog.Show("Message", "Please Check the Selected Element");
             }
 
-            var locPoint = element.Location as LocationPoint;
+            var locPoint = element?.Location as LocationPoint;
 
             return locPoint.Point;
 
@@ -69,13 +72,13 @@ namespace Geometry
 
         //Lets Create the Extension Method for GetPlacementCurve:
 
-        public static Curve GetPlacementCurve(this Element element)
+        public static Curve GetPlacementCurve(this Element? element)
         {
             if (element == null)
             {
                 TaskDialog.Show("Message", "Please Check the Selected Element");
             }
-            var locCurve = element.Location as LocationCurve;
+            var locCurve = element?.Location as LocationCurve;
             return locCurve.Curve;
         }
 
@@ -83,20 +86,20 @@ namespace Geometry
 
         //Lets Create the Extension Method fot Transition doAction:
 
-        public static void doAction(this Transaction transaction, Action doAction)
+        public static void doAction(this Autodesk.Revit.DB.Transaction? transaction, Action? doAction)
         {
             if (transaction == null || doAction == null)
             {
                 TaskDialog.Show("Message", "Please Check the Transaction and Action");
             }
-            transaction.Start();
-            doAction.Invoke();
-            transaction.Commit();
+            transaction?.Start();
+            doAction?.Invoke();
+            transaction?.Commit();
         }
 
         //Lets Create the Extension Method for MovePointAlongVector:
 
-        public static XYZ MoveAlongVector(this XYZ vector, XYZ point)
+        public static XYZ MoveAlongVector(this XYZ? vector, XYZ? point)
         {
             if (vector == null || point == null)
             {
@@ -115,21 +118,21 @@ namespace Geometry
         /// <Returns>The new point after moving</returns>
 
 
-        public static XYZ MoveAlongVector(this XYZ vector, XYZ point, double distance)
+        public static XYZ MoveAlongVector(this XYZ? vector, XYZ? point, double distance)
         {
             if (vector == null || point == null)
             {
                 TaskDialog.Show("Message", "Please Check the Selected Element and Vector that need to be move");
             }
-            vector.Add(point.Normalize() * distance);
+            vector.Add(point?.Normalize() * distance);
             return vector;
         }
 
-        public static Curve AsCurve(this XYZ vector, XYZ origin = null, double? length = null)
+        public static Curve AsCurve(this XYZ? vector, XYZ? origin = null, double? length = null)
         {
             origin ??= XYZ.Zero;
-            length ??= vector.GetLength();
-            return Line.CreateBound(origin, origin.MoveAlongVector(vector.Normalize(), length.GetValueOrDefault()));
+            length ??= vector?.GetLength();
+            return Line.CreateBound(origin, origin.MoveAlongVector(vector?.Normalize(), length.GetValueOrDefault()));
         }
 
         public static void Visualize(
@@ -168,7 +171,7 @@ namespace Geometry
             if (geometryElement == null)
                 throw new ArgumentNullException(nameof(geometryElement));
 
-            foreach (GeometryObject geometryObject in geometryElement)
+            foreach (GeometryObject? geometryObject in geometryElement)
             {
                 // Try to return this object if it is T
                 T ultimateElement = geometryObject as T;
@@ -179,7 +182,7 @@ namespace Geometry
                 }
 
                 // Drill into GeometryInstance
-                GeometryInstance geometryInstance = geometryObject as GeometryInstance;
+                GeometryInstance? geometryInstance = geometryObject as GeometryInstance;
                 if (geometryInstance != null)
                 {
                     GeometryElement familyGeometries =
@@ -286,5 +289,168 @@ namespace Geometry
         {
             return curve.Evaluate(0.5, true);
         }
+
+        //Lets Create the Extension method for View Transfer Visulize
+
+        public static Transform GeTransform(this View view)
+        {
+            var transform = Transform.Identity;
+            transform.BasisX = view.RightDirection;
+            transform.BasisY = view.UpDirection;
+            transform.BasisZ = view.ViewDirection;
+            return transform;
+        }
+
+        //Lets Create Extension method for getElementByName
+
+        public static TElement getElementByName<TElement>(this Document? doc, string name)
+        where TElement : Element
+        {
+            var ele = new FilteredElementCollector(doc)
+                .OfClass(typeof(TElement))
+                .WhereElementIsElementType()
+                .Where(x => x.Name == name)
+                .ToList();
+            return ele as TElement;
+        }
+
+        //Let's Create the Extension Method for Create the Floor Plan:
+
+        public static IList<ViewPlan> CreateMissingFloorPlans(this Document doc)
+        {
+            if (doc == null) throw new ArgumentNullException(nameof(doc));
+
+            var createdPlans = new List<ViewPlan>();
+
+            var viewFamilyType = new FilteredElementCollector(doc)
+                .OfClass(typeof(ViewFamilyType))
+                .Cast<ViewFamilyType>()
+                .FirstOrDefault(x => x.ViewFamily == ViewFamily.FloorPlan);
+
+            if (viewFamilyType == null)
+                throw new InvalidOperationException("No FloorPlan ViewFamilyType found.");
+
+            var levels = new FilteredElementCollector(doc)
+                .OfClass(typeof(Level))
+                .Cast<Level>()
+                .ToList();
+
+            // Existing floor plan names
+            var existingPlanNames = new FilteredElementCollector(doc)
+                .OfClass(typeof(ViewPlan))
+                .Cast<ViewPlan>()
+                .Where(v => v.ViewType == ViewType.FloorPlan)
+                .Select(v => v.Name)
+                .ToHashSet();
+
+            foreach (var level in levels)
+            {
+                if (level == null) continue;
+
+                string planName = level.Name;
+
+                // Skip if a plan with the same name already exists
+                if (existingPlanNames.Contains(planName))
+                    continue;
+
+                var newPlan = ViewPlan.Create(doc, viewFamilyType.Id, level.Id);
+                newPlan.Name = planName;
+
+                createdPlans.Add(newPlan);
+                existingPlanNames.Add(planName);
+            }
+
+            return createdPlans;
+        }
+
+        //Extension Method for doAction 
+
+        public static void Run(this Document doc, Action doAction, string? transitionName)
+        {
+            using (var t = new Autodesk.Revit.DB.Transaction(doc, transitionName))
+            {
+                t.Start();
+                doAction();
+                t.Commit();
+            }
+        }
+        //Lets Create the Extension Method for Creating 3D views as per Level
+
+        public static IList<View3D> createView3Ds(this Document doc)
+        {
+            var view = new List<View3D>();
+
+            // 3D ViewFamilyType
+            var viewFamily = new FilteredElementCollector(doc)
+                .OfClass(typeof(ViewFamilyType))
+                .Cast<ViewFamilyType>()
+                .FirstOrDefault(x => x.ViewFamily == ViewFamily.ThreeDimensional);
+
+            if (viewFamily == null)
+                throw new InvalidOperationException("No 3D ViewFamilyType found.");
+
+            // ✅ Collect existing 3D VIEW names (not ViewFamilyType)
+            var previousView = new FilteredElementCollector(doc)
+                .OfClass(typeof(View3D))
+                .Cast<View3D>()
+                .Where(v => !v.IsTemplate)
+                .Select(v => v.Name)
+                .ToHashSet();
+
+            // Levels ordered by elevation
+            var lvl = new FilteredElementCollector(doc)
+                .OfClass(typeof(Level))
+                .Cast<Level>()
+                .OrderBy(l => l.Elevation)
+                .ToList();
+
+            foreach (var level in lvl)
+            {
+                var viewName = $"3D-{level.Name}";
+
+                // Skip if a view with this name already exists
+                if (previousView.Contains(viewName))
+                    continue;
+
+                var newView = View3D.CreateIsometric(doc, viewFamily.Id);
+                newView.Name = viewName;
+
+                var bb = new BoundingBoxXYZ
+                {
+                    Transform = Transform.Identity,
+                    Min = new XYZ(-10, -10, level.Elevation - 4),
+                    Max = new XYZ(10, 10, level.Elevation + 4)
+                };
+
+                newView.SetSectionBox(bb);
+                newView.DetailLevel = ViewDetailLevel.Fine;
+
+                view.Add(newView);
+                previousView.Add(viewName);
+            }
+
+            return view;
+        }
+
+        public static IList<ViewSection> CreateViewSection(this Document document)
+        {
+            //This Class Will use for Create Section:
+
+            var viewFamilyType = new FilteredElementCollector(document)
+                .OfClass(typeof(ViewFamilyType))
+                .Cast<ViewFamilyType>()
+                .FirstOrDefault(x => x.ViewFamily == ViewFamily.Section)!.Id;
+
+            //Let's Create the Section Bounding Box for 
+
+
+            ViewSection.CreateSection(document, viewFamilyType, sectionBox);
+
+
+
+
+            return null;
+        }
+
     }
 }

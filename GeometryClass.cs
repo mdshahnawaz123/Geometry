@@ -101,13 +101,13 @@ namespace Geometry
         /// Tries to decide whether an element should belong to a given room.
         /// Handles FamilyInstances (doors, windows, equipment, etc.), walls and generic elements.
         /// </summary>
-        private static bool IsElementInRoom(Element e, Room room)
+        private static bool IsElementInRoom(Element? e, Room? room)
         {
             // ---------- FAMILY INSTANCES (doors, windows, furniture, MEP equipment, etc.) ----------
             if (e is FamilyInstance fi)
             {
                 Category cat = fi.Category;
-                Room relatedRoom = null;
+                Room? relatedRoom = null;
 
                 if (cat != null && cat.Id == new ElementId(BuiltInCategory.OST_Doors))
                 {
@@ -125,7 +125,7 @@ namespace Geometry
                     relatedRoom = fi.Room;
                 }
 
-                if (relatedRoom != null && relatedRoom.Id == room.Id)
+                if (relatedRoom != null && relatedRoom.Id == room?.Id)
                     return true;
 
                 // if Room data did not help, fall through to geometric check
@@ -164,7 +164,7 @@ namespace Geometry
         /// Approximate test for whether a wall belongs to a given room.
         /// Offsets a point on the wall to each side and checks the room on each side.
         /// </summary>
-        private static bool IsWallInRoom(Wall wall, Room room)
+        private static bool IsWallInRoom(Wall? wall, Room room)
         {
             LocationCurve locCurve = wall.Location as LocationCurve;
             if (locCurve == null)

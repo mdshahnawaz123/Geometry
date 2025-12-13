@@ -1,14 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Platforms>AnyCPU;x64</Platforms>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Platforms>AnyCPU;x64</Platforms>
 
-  <ItemGroup>
-    <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="2026.0.0" />
-  </ItemGroup>
+		<!-- Optional but common -->
+		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Embed your icon / resources -->
+		<EmbeddedResource Include="3D.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="2026.0.0" />
+	</ItemGroup>
 
 </Project>
